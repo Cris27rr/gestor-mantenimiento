@@ -19,6 +19,10 @@ export default defineConfig(({ mode }) => ({
       "Referrer-Policy": "strict-origin-when-cross-origin",
     },
   },
+  preview: {
+    host: "::",
+    port: 8080,
+  },
   plugins: [
     react(),
     VitePWA({
@@ -99,7 +103,6 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Expose both VITE_* (Vite default) and EXPO_PUBLIC_* (Rork's cross-platform
-  // public-env convention, written by tools like getOrCreateAuthConfig).
+  // VITE_* (estándar) y EXPO_PUBLIC_* (compatibilidad con .env antiguos)
   envPrefix: ["VITE_", "EXPO_PUBLIC_"],
 }));
