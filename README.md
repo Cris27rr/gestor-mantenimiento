@@ -126,8 +126,9 @@ gestor-mantenimiento/
 │   │   │   └── supabase/
 │   │   │       └── types.ts     # Tipos autogenerados de Supabase
 │   │   ├── lib/
+│   │   │   ├── auth/            # Sesión local, demo, fallback offline
+│   │   │   ├── audit/           # Logs de auditoría/acceso (localStorage)
 │   │   │   ├── db.ts            # Capa de datos Supabase (CRUD + mapeo columnas)
-│   │   │   ├── mockDb.ts        # Auth local (localStorage): sesión, lockout, demo, logs
 │   │   │   ├── equipmentReport.ts # Generador de informes PDF (jsPDF)
 │   │   │   ├── supabase.ts      # Cliente de Supabase
 │   │   │   └── utils.ts         # Utilidades (cn, formatadores)
@@ -181,7 +182,7 @@ La autenticación usa una arquitectura **intencionalmente dividida**:
 
 | Aspecto | Archivo | Almacenamiento |
 |---|---|---|
-| **Auth** (login, sesión, lockout, demo) | `mockDb.ts` | `localStorage` del navegador |
+| **Auth** (login, sesión, lockout, demo) | `lib/auth/*` | `localStorage` del navegador |
 | **Datos** (equipos, fallas, OT, etc.) | `db.ts` | Supabase (nube) |
 
 **¿Por qué?** El login verifica credenciales contra la tabla `usuarios` de Supabase, pero la gestión de sesión (token, expiración, bloqueo por intentos) se maneja localmente para no depender de Supabase Auth. Esto permite que el acceso demo funcione sin conexión y que el bloqueo por intentos sea inmediato.
@@ -265,8 +266,8 @@ La página de **Auditoría** (`/auditoria`) es accesible por los roles `admin` y
 | Fallas reportadas | Supabase (tabla `fallas`) | Sí — compartida entre dispositivos |
 | Órdenes de trabajo | Supabase (tabla `ordenes_trabajo`) | Sí |
 | Mantenimientos | Supabase (tabla `mantenimientos`) | Sí |
-| Logs de acceso | `localStorage` (mockDb) | No — local por dispositivo |
-| Logs de auditoría | `localStorage` (mockDb) | No — local por dispositivo |
+| Logs de acceso | `localStorage` (`lib/audit/localAuditLogs.ts`) | No — local por dispositivo |
+| Logs de auditoría | `localStorage` (`lib/audit/localAuditLogs.ts`) | No — local por dispositivo |
 
 ### Funcionalidades
 
@@ -413,7 +414,7 @@ bun run build
 
 1. **No borrar ni modificar** la cuenta `cristian98arr@gmail.com` — es la cuenta admin principal y está exenta de políticas de seguridad
 2. **No cambiar** el prefijo de variables de entorno de `EXPO_PUBLIC_` a `VITE_` sin actualizar `vite.config.ts`
-3. **El archivo `web/src/lib/mockDb.ts`** gestiona auth local — no migrar a Supabase sin un plan de transición de sesiones
+3. **La auth local** vive en `web/src/lib/auth/` y `web/src/lib/audit/` — no migrar a Supabase Auth sin un plan de transición de sesiones
 4. **El cache de Supabase es `NetworkOnly`** en la PWA — no cambiar o los datos podrían quedar desactualizados
 5. **Los tipos en `backend/types.ts`** son autogenerados — no editar manualmente
 6. **Los componentes en `web/src/components/ui/`** son de shadcn/ui — no editar, regenerar con la CLI si se necesita personalizar
