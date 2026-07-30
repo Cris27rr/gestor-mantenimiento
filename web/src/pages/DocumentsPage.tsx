@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, FileText, AlertTriangle, Download, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { useEquipos, useDocumentosByEquipo, useCreateDocumento, useDeleteDocumento } from "@/hooks/use-data";
+import { useEquiposLookup, useDocumentosByEquipo, useCreateDocumento, useDeleteDocumento } from "@/hooks/use-data";
 import type { Document } from "@/types";
 
 const typeLabels: Record<string, string> = { manual: "Manual", certificado_calibracion: "Certificado de Calibración", ficha_tecnica: "Ficha Técnica", reporte_seguridad: "Reporte de Seguridad", otro: "Otro" };
@@ -21,7 +21,7 @@ export default function DocumentsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [docFile, setDocFile] = useState<File | null>(null);
 
-  const { data: equipos = [] } = useEquipos();
+  const { data: equipos = [] } = useEquiposLookup();
   // For the global documents view, we fetch all docs from all equipos
   // We use a combined approach - get docs by looping over equipo IDs
   // For simplicity, we fetch documents for the first equipment and show separate view

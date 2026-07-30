@@ -2,7 +2,88 @@
 
 Sistema web integral para la gestión de mantenimiento de equipos médicos en entornos clínicos y hospitalarios. Permite llevar control de inventario de equipos, órdenes de trabajo, reportes de fallas, repuestos, mantenimientos preventivos y usuarios — todo sincronizado en la nube vía Supabase.
 
-> **App en producción**: [https://p-wevi877h22eccts5qbdbt.rork.live](https://p-wevi877h22eccts5qbdbt.rork.live)
+---
+
+## Guía rápida: ver la app en tu PC (sin Rork)
+
+Necesitas instalar **[Bun](https://bun.sh/)** una sola vez (es el gestor de paquetes del proyecto).
+
+### Paso 1 — Clonar y entrar al proyecto
+
+```bash
+git clone https://github.com/Cris27rr/gestor-mantenimiento.git
+cd gestor-mantenimiento
+```
+
+### Paso 2 — Configurar Supabase
+
+1. Entra en [supabase.com](https://supabase.com) y abre tu proyecto (o crea uno).
+2. Ve a **Project Settings → API**.
+3. Copia **Project URL** y la clave **anon public**.
+
+En la carpeta `web`:
+
+```bash
+cd web
+cp .env.example .env
+```
+
+Abre `web/.env` con un editor de texto y pega tus valores:
+
+```env
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
+```
+
+### Paso 3 — Instalar dependencias
+
+Desde la **raíz** del repo (carpeta `gestor-mantenimiento`):
+
+```bash
+bun install
+cd web && bun install
+```
+
+(O solo `cd web && bun install` si trabajas siempre dentro de `web`.)
+
+### Paso 4 — Modo desarrollo (recomendado mientras programas)
+
+Desde la raíz:
+
+```bash
+bun run dev
+```
+
+Abre el navegador en: **http://localhost:8080**
+
+- Los cambios en el código se ven al guardar el archivo.
+- **Acceso Demo** en login = prueba sin contraseña (30 min).
+- Con Supabase configurado, usa tu usuario real de la tabla `usuarios`.
+
+### Paso 5 — Modo “como producción” en tu PC
+
+Simula la versión optimizada que subirías a un servidor:
+
+```bash
+bun run serve
+```
+
+Esto ejecuta `build` + `preview`. Misma URL: **http://localhost:8080**
+
+| Comando (desde la raíz) | Qué hace |
+|-------------------------|----------|
+| `bun run dev` | Servidor de desarrollo con recarga automática |
+| `bun run build` | Genera la carpeta `web/dist/` |
+| `bun run start` | Sirve `dist/` (hay que hacer `build` antes) |
+| `bun run serve` | Build + servir en un solo paso |
+
+### Si no ves cambios en el navegador
+
+La app es una PWA. Prueba **recarga forzada**: `Ctrl+Shift+R` (Windows/Linux) o `Cmd+Shift+R` (Mac).
+
+### Otros equipos en tu red local (opcional)
+
+Con `bun run dev` o `bun run serve`, Vite escucha en todas las interfaces. Desde otro móvil/PC en la misma WiFi, prueba `http://IP-DE-TU-PC:8080` (la IP la ves con `ip addr` o `ipconfig`).
 
 ---
 
@@ -82,22 +163,11 @@ La aplicación estará disponible en `http://localhost:8080`.
 Crear un archivo `web/.env` con las siguientes variables:
 
 ```env
-# Supabase
-EXPO_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
-
-# Rork (plataforma de despliegue)
-EXPO_PUBLIC_RORK_API_BASE_URL=...
-EXPO_PUBLIC_RORK_APP_KEY=...
-EXPO_PUBLIC_RORK_AUTH_URL=...
-EXPO_PUBLIC_RORK_FUNCTIONS_URL=...
-EXPO_PUBLIC_RORK_TOOLKIT_SECRET_KEY=...
-EXPO_PUBLIC_TOOLKIT_URL=...
-EXPO_PUBLIC_PROJECT_ID=...
-EXPO_PUBLIC_TEAM_ID=...
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-anon-key
 ```
 
-> **Nota**: El prefijo `EXPO_PUBLIC_` se usa en lugar de `VITE_` por convención de Rork. Vite está configurado para reconocer ambos prefijos (`envPrefix: ["VITE_", "EXPO_PUBLIC_"]` en `vite.config.ts`).
+También se aceptan nombres antiguos `EXPO_PUBLIC_SUPABASE_*` si ya tenías un `.env` previo.
 
 ### Cómo obtener las credenciales de Supabase
 
@@ -126,8 +196,9 @@ gestor-mantenimiento/
 │   │   │   └── supabase/
 │   │   │       └── types.ts     # Tipos autogenerados de Supabase
 │   │   ├── lib/
+│   │   │   ├── auth/            # Sesión local, demo, fallback offline
+│   │   │   ├── audit/           # Logs de auditoría/acceso (localStorage)
 │   │   │   ├── db.ts            # Capa de datos Supabase (CRUD + mapeo columnas)
-│   │   │   ├── mockDb.ts        # Auth local (localStorage): sesión, lockout, demo, logs
 │   │   │   ├── equipmentReport.ts # Generador de informes PDF (jsPDF)
 │   │   │   ├── supabase.ts      # Cliente de Supabase
 │   │   │   └── utils.ts         # Utilidades (cn, formatadores)
@@ -153,7 +224,6 @@ gestor-mantenimiento/
 │   └── package.json
 ├── backend/
 │   └── types.ts                 # Tipos autogenerados de la BD Supabase
-├── rork.json                    # Config de la plataforma Rork
 └── README.md
 ```
 
@@ -181,7 +251,7 @@ La autenticación usa una arquitectura **intencionalmente dividida**:
 
 | Aspecto | Archivo | Almacenamiento |
 |---|---|---|
-| **Auth** (login, sesión, lockout, demo) | `mockDb.ts` | `localStorage` del navegador |
+| **Auth** (login, sesión, lockout, demo) | `lib/auth/*` | `localStorage` del navegador |
 | **Datos** (equipos, fallas, OT, etc.) | `db.ts` | Supabase (nube) |
 
 **¿Por qué?** El login verifica credenciales contra la tabla `usuarios` de Supabase, pero la gestión de sesión (token, expiración, bloqueo por intentos) se maneja localmente para no depender de Supabase Auth. Esto permite que el acceso demo funcione sin conexión y que el bloqueo por intentos sea inmediato.
@@ -265,8 +335,8 @@ La página de **Auditoría** (`/auditoria`) es accesible por los roles `admin` y
 | Fallas reportadas | Supabase (tabla `fallas`) | Sí — compartida entre dispositivos |
 | Órdenes de trabajo | Supabase (tabla `ordenes_trabajo`) | Sí |
 | Mantenimientos | Supabase (tabla `mantenimientos`) | Sí |
-| Logs de acceso | `localStorage` (mockDb) | No — local por dispositivo |
-| Logs de auditoría | `localStorage` (mockDb) | No — local por dispositivo |
+| Logs de acceso | `localStorage` (`lib/audit/localAuditLogs.ts`) | No — local por dispositivo |
+| Logs de auditoría | `localStorage` (`lib/audit/localAuditLogs.ts`) | No — local por dispositivo |
 
 ### Funcionalidades
 
@@ -387,33 +457,44 @@ Cuando se añade una columna a una tabla de Supabase:
 
 ## Despliegue
 
-### Rork (despliegue automático)
+### En tu propio ordenador
 
-La aplicación se despliega automáticamente a través de Rork. Cada cambio en el código se sincroniza con el repositorio interno de Rork y se publica en:
+Ver la sección [Guía rápida](#guía-rápida-ver-la-app-en-tu-pc-sin-rork) al inicio del README.
 
-```
-https://p-wevi877h22eccts5qbdbt.rork.live
-```
+### En un servidor (VPS, NAS, etc.)
 
-### Despliegue manual (Vercel, Netlify, etc.)
+1. En el servidor, clona el repo e instala Bun.
+2. Crea `web/.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+3. Ejecuta:
 
 ```bash
 cd web
+bun install
 bun run build
-# El directorio dist/ contiene los archivos estáticos listos para servir
 ```
 
-**Notas para hosting estático**:
-- Configurar redirección SPA: todas las rutas → `index.html` (React Router usa client-side routing)
-- Las variables de entorno deben estar en el entorno de build (prefijo `EXPO_PUBLIC_` o `VITE_`)
+4. Sirve la carpeta `web/dist/` con cualquier servidor estático (nginx, Caddy, `bun run preview` solo para pruebas).
+5. Configura **fallback SPA**: todas las rutas (`/equipos`, `/login`, …) deben devolver `index.html`.
+
+En **build time** deben existir las variables `VITE_*` (Vite las embebe en el JavaScript). Si cambias el `.env`, vuelve a ejecutar `bun run build`.
+
+### Hosting en la nube (opcional)
+
+Vercel, Netlify, Cloudflare Pages, etc.:
+
+- Directorio raíz del sitio: `web`
+- Comando de build: `bun run build`
+- Carpeta de salida: `dist`
+- Variables de entorno en el panel: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- Redirección SPA → `index.html`
 
 ---
 
 ## Notas importantes
 
 1. **No borrar ni modificar** la cuenta `cristian98arr@gmail.com` — es la cuenta admin principal y está exenta de políticas de seguridad
-2. **No cambiar** el prefijo de variables de entorno de `EXPO_PUBLIC_` a `VITE_` sin actualizar `vite.config.ts`
-3. **El archivo `web/src/lib/mockDb.ts`** gestiona auth local — no migrar a Supabase sin un plan de transición de sesiones
+2. Las variables de Supabase van en `web/.env` con prefijo **`VITE_`** (ver `.env.example`)
+3. **La auth local** vive en `web/src/lib/auth/` y `web/src/lib/audit/` — no migrar a Supabase Auth sin un plan de transición de sesiones
 4. **El cache de Supabase es `NetworkOnly`** en la PWA — no cambiar o los datos podrían quedar desactualizados
 5. **Los tipos en `backend/types.ts`** son autogenerados — no editar manualmente
 6. **Los componentes en `web/src/components/ui/`** son de shadcn/ui — no editar, regenerar con la CLI si se necesita personalizar

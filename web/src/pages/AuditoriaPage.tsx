@@ -25,11 +25,11 @@ import {
 import { jsPDF } from "jspdf";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { db as mockDb } from "@/lib/mockDb";
+import { localAccessLogs, localAuditLogs } from "@/lib/audit/localAuditLogs";
 import {
   useFallas,
   useOrdenes,
-  useEquipos,
+  useEquiposLookup,
   useUsuarios,
   useMantenimientos,
 } from "@/hooks/use-data";
@@ -120,13 +120,12 @@ export default function AuditoriaPage() {
 
   const { data: fallas = [] } = useFallas();
   const { data: ordenes = [] } = useOrdenes();
-  const { data: equipos = [] } = useEquipos();
+  const { data: equipos = [] } = useEquiposLookup();
   const { data: usuarios = [] } = useUsuarios();
   const { data: mantenimientos = [] } = useMantenimientos();
 
-  // Get audit & access logs from mockDb (localStorage)
-  const auditLogs: AuditLog[] = useMemo(() => mockDb.auditLogs.getAll(), []);
-  const accessLogs: AccessLog[] = useMemo(() => mockDb.accessLogs.getAll(), []);
+  const auditLogs: AuditLog[] = useMemo(() => localAuditLogs.getAll(), []);
+  const accessLogs: AccessLog[] = useMemo(() => localAccessLogs.getAll(), []);
 
   // Build unified activity feed from all sources
   const allActivities: ActivityEntry[] = useMemo(() => {

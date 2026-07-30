@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Calendar, Wrench, AlertTriangle, Clock, Search, Stethoscope, Check, X, Filter } from "lucide-react";
 import { toast } from "sonner";
-import { useEquipos, useMantenimientos, useCreateMantenimiento, useUpdateMantenimiento } from "@/hooks/use-data";
+import { useEquiposLookup, useMantenimientos, useCreateMantenimiento, useUpdateMantenimiento } from "@/hooks/use-data";
 import type { MaintenanceSchedule, Equipment } from "@/types";
 
 type SearchField = "todos" | "nombre" | "marca" | "modelo" | "serial" | "ubicacion";
@@ -47,7 +47,7 @@ export default function MaintenancePage() {
   const [selectedEquipo, setSelectedEquipo] = useState<Equipment | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  const { data: equipos = [] } = useEquipos();
+  const { data: equipos = [] } = useEquiposLookup();
   const { data: mantenimientosRaw = [] } = useMantenimientos();
   const createMantenimiento = useCreateMantenimiento();
   const updateMantenimiento = useUpdateMantenimiento();
