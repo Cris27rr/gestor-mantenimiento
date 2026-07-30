@@ -52,6 +52,17 @@ export interface AccessLog {
 
 export type EquipmentStatus = "operativo" | "en_mantenimiento" | "fuera_de_servicio" | "dado_de_baja" | "desconocido";
 
+/** Subset of equipment fields for selects and name resolution */
+export interface EquipmentLookup {
+  id: string;
+  nombre: string;
+  marca: string;
+  modelo: string;
+  serial: string;
+  ubicacion: string;
+  estado: EquipmentStatus;
+}
+
 export interface Equipment {
   id: string;
   uuid: string;

@@ -23,6 +23,13 @@ export function useEquipos() {
   return useQuery({ queryKey: ["equipos"], queryFn: () => db.equipos.getAll() });
 }
 
+export function useEquiposLookup() {
+  return useQuery({
+    queryKey: ["equipos", "lookup"],
+    queryFn: () => db.equipos.listForLookup(),
+  });
+}
+
 export function useEquipo(id: string | undefined) {
   return useQuery({
     queryKey: ["equipos", id],
@@ -119,9 +126,14 @@ export function useUpdateOrden() {
       db.ordenes.update(id, updates),
     onSuccess: (updated, { id, updates }) => {
       qc.setQueryData<WorkOrder[]>(["ordenes"], (old) =>
-        old?.map((o) => (o.id === id ? { ...o, ...updates } : o)) ?? old
+        old?.map((o) => (o.id === id ? { ...o, ...updates, ...updated } : o)) ?? old
       );
-      qc.invalidateQueries({ queryKey: ["ordenes"], refetchType: "all", exact: false });
+      const equipoId = updated?.equipoId;
+      if (equipoId) {
+        qc.setQueryData<WorkOrder[]>(["ordenes", "equipo", equipoId], (old) =>
+          old?.map((o) => (o.id === id ? { ...o, ...updates, ...updated } : o)) ?? old
+        );
+      }
     },
   });
 }
@@ -211,10 +223,8 @@ export function useFallas() {
   return useQuery({
     queryKey: ["fallas"],
     queryFn: () => db.fallas.getAll(),
-    staleTime: 0,
-    gcTime: Infinity,
+    staleTime: 30_000,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
   });
 }
 
@@ -250,13 +260,16 @@ export function useUpdateFalla() {
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<FailureReport> }) =>
       db.fallas.update(id, updates),
-    onSuccess: (updated, { id, updates }) => {
-      // Direct cache update for both the full list and per-equipo queries
+    onSuccess: (_updated, { id, updates }) => {
       qc.setQueryData<FailureReport[]>(["fallas"], (old) =>
         old?.map((f) => (f.id === id ? { ...f, ...updates } : f)) ?? old
       );
-      // Invalidate equipo-specific queries so they refetch
-      qc.invalidateQueries({ queryKey: ["fallas"], refetchType: "all", exact: false });
+      const equipoId = updates.equipoId ?? qc.getQueryData<FailureReport[]>(["fallas"])?.find((f) => f.id === id)?.equipoId;
+      if (equipoId) {
+        qc.setQueryData<FailureReport[]>(["fallas", equipoId], (old) =>
+          old?.map((f) => (f.id === id ? { ...f, ...updates } : f)) ?? old
+        );
+      }
     },
   });
 }
@@ -275,6 +288,18 @@ export function useCreateNotificacion() {
   return useMutation({
     mutationFn: (n: Notification) => db.notificaciones.create(n),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notificaciones"] }),
+  });
+}
+
+export function useMarcarNotificacionLeida() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => db.notificaciones.marcarLeida(id),
+    onSuccess: (_void, id) => {
+      qc.setQueriesData<Notification[]>({ queryKey: ["notificaciones"] }, (old) =>
+        old?.map((n) => (n.id === id ? { ...n, leida: true } : n)) ?? old
+      );
+    },
   });
 }
 

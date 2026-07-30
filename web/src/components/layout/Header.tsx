@@ -1,18 +1,20 @@
 import { Bell, QrCode } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { db } from "@/lib/mockDb";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useMarcarNotificacionLeida, useNotificaciones } from "@/hooks/use-data";
 
 export default function Header() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notifOpen, setNotifOpen] = useState(false);
+  const { data: notificacionesAll = [] } = useNotificaciones(user?.id);
+  const marcarLeida = useMarcarNotificacionLeida();
 
   if (!user) return null;
 
-  const notificaciones = db.notificaciones.getByUsuarioId(user.id).filter((n) => !n.leida);
+  const notificaciones = notificacionesAll.filter((n) => !n.leida);
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-end px-6 gap-4 sticky top-0 z-30">
@@ -52,7 +54,7 @@ export default function Header() {
                     <button
                       key={n.id}
                       onClick={() => {
-                        db.notificaciones.marcarLeida(n.id);
+                        marcarLeida.mutate(n.id);
                         setNotifOpen(false);
                         if (n.entidadId) {
                           if (n.tipo === "ot") navigate(`/ordenes`);

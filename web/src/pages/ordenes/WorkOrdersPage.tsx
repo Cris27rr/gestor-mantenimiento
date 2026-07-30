@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, ClipboardList, Filter, Calendar, User, Wrench, Package, Trash2, X, Camera, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import { useOrdenes, useEquipos, useRepuestos, useUsuarios, useCreateOrden, useUpdateOrden, useDeleteOrden, useUpdateRepuesto } from "@/hooks/use-data";
+import { useOrdenes, useEquiposLookup, useRepuestos, useUsuarios, useCreateOrden, useUpdateOrden, useDeleteOrden, useUpdateRepuesto } from "@/hooks/use-data";
 import type { MaintenanceType, MaintenancePriority, WorkOrderStatus } from "@/types";
 
 const typeLabels: Record<string, string> = { preventivo: "Preventivo", correctivo: "Correctivo", calibracion: "Calibración", verificacion: "Verificación" };
@@ -44,7 +44,7 @@ export default function WorkOrdersPage() {
       setIsDialogOpen(true);
     }
   }, [searchParams]);
-  const { data: equipos = [] } = useEquipos();
+  const { data: equipos = [] } = useEquiposLookup();
   const { data: repuestos = [] } = useRepuestos();
   const { data: usuariosRaw = [] } = useUsuarios();
   const createOrden = useCreateOrden();

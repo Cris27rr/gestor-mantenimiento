@@ -20,7 +20,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useFallas, useEquipos, useOrdenes, useCreateOrden, useUpdateFalla } from "@/hooks/use-data";
+import { useFallas, useEquiposLookup, useOrdenes, useCreateOrden, useUpdateFalla } from "@/hooks/use-data";
 import type { ReporterType } from "@/types";
 
 const reporterTypeLabels: Record<ReporterType, string> = {
@@ -48,7 +48,7 @@ export default function FallasPage() {
   const { hasRole } = useAuth();
   const isTecnico = hasRole(["admin", "director_departamento", "tecnico"]);
   const { data: fallas = [], isLoading } = useFallas();
-  const { data: equipos = [] } = useEquipos();
+  const { data: equipos = [] } = useEquiposLookup();
   const { data: ordenes = [] } = useOrdenes();
   const createOrden = useCreateOrden();
   const updateFalla = useUpdateFalla();

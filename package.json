@@ -1,0 +1,10 @@
+{
+  "name": "gestor-mantenimiento",
+  "private": true,
+  "scripts": {
+    "dev": "cd web && bun run dev",
+    "build": "cd web && bun run build",
+    "lint": "cd web && bun run lint",
+    "test": "cd web && bun run test"
+  }
+}

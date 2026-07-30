@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import type {
   Equipment,
+  EquipmentLookup,
   WorkOrder,
   SparePart,
   Movement,
@@ -288,6 +289,21 @@ export const db = {
     getAll: async (): Promise<Equipment[]> => {
       const { data } = await supabase.from("equipos").select("*").order("ubicacion");
       return (data ?? []).map(toEquipment);
+    },
+    listForLookup: async (): Promise<EquipmentLookup[]> => {
+      const { data } = await supabase
+        .from("equipos")
+        .select("id,nombre,marca,modelo,serial,ubicacion,estado")
+        .order("ubicacion");
+      return (data ?? []).map((row) => ({
+        id: row.id,
+        nombre: row.nombre,
+        marca: row.marca ?? "",
+        modelo: row.modelo ?? "",
+        serial: row.serial ?? "",
+        ubicacion: row.ubicacion ?? "General",
+        estado: (row.estado ?? "operativo") as EquipmentLookup["estado"],
+      }));
     },
     getById: async (id: string): Promise<Equipment | undefined> => {
       const { data } = await supabase.from("equipos").select("*").eq("id", id).single();

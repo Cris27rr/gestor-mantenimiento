@@ -1,27 +1,33 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { queryClient } from "@/lib/queryClient";
+import PageLoader from "@/components/layout/PageLoader";
 
 import AppLayout from "@/components/layout/AppLayout";
 import LoginPage from "@/pages/Login";
 import DashboardPage from "@/pages/Dashboard";
 import EquipmentPage from "@/pages/equipos/EquipmentPage";
-import EquipmentDetailPage from "@/pages/equipos/EquipmentDetailPage";
-import PublicEquipmentPage from "@/pages/equipos/PublicEquipmentPage";
 import WorkOrdersPage from "@/pages/ordenes/WorkOrdersPage";
 import MaintenancePage from "@/pages/MantenimientoPage";
 import SparePartsPage from "@/pages/repuestos/SparePartsPage";
-import UsersPage from "@/pages/usuarios/UsersPage";
 import DocumentsPage from "@/pages/DocumentsPage";
 import FallasPage from "@/pages/FallasPage";
-import QRScannerPage from "@/pages/QRScannerPage";
-import AuditoriaPage from "@/pages/AuditoriaPage";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+const EquipmentDetailPage = lazy(() => import("@/pages/equipos/EquipmentDetailPage"));
+const PublicEquipmentPage = lazy(() => import("@/pages/equipos/PublicEquipmentPage"));
+const UsersPage = lazy(() => import("@/pages/usuarios/UsersPage"));
+const QRScannerPage = lazy(() => import("@/pages/QRScannerPage"));
+const AuditoriaPage = lazy(() => import("@/pages/AuditoriaPage"));
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -32,7 +38,14 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/equipo/:uuid" element={<PublicEquipmentPage />} />
+            <Route
+              path="/equipo/:uuid"
+              element={
+                <LazyPage>
+                  <PublicEquipmentPage />
+                </LazyPage>
+              }
+            />
             <Route
               path="/"
               element={
@@ -53,7 +66,9 @@ const App = () => (
               path="/equipos/:id"
               element={
                 <AppLayout>
-                  <EquipmentDetailPage />
+                  <LazyPage>
+                    <EquipmentDetailPage />
+                  </LazyPage>
                 </AppLayout>
               }
             />
@@ -85,7 +100,9 @@ const App = () => (
               path="/usuarios"
               element={
                 <AppLayout>
-                  <UsersPage />
+                  <LazyPage>
+                    <UsersPage />
+                  </LazyPage>
                 </AppLayout>
               }
             />
@@ -109,7 +126,9 @@ const App = () => (
               path="/escanear"
               element={
                 <AppLayout>
-                  <QRScannerPage />
+                  <LazyPage>
+                    <QRScannerPage />
+                  </LazyPage>
                 </AppLayout>
               }
             />
@@ -117,7 +136,9 @@ const App = () => (
               path="/auditoria"
               element={
                 <AppLayout>
-                  <AuditoriaPage />
+                  <LazyPage>
+                    <AuditoriaPage />
+                  </LazyPage>
                 </AppLayout>
               }
             />

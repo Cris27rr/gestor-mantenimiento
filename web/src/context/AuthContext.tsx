@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { User, UserRole } from "@/types";
-import { db } from "@/lib/mockDb";
+import { localAuth, userFromSession } from "@/lib/auth/localAuthFallback";
+import { clearSessionToken } from "@/lib/auth/sessionStore";
+import { recordAccessLog } from "@/lib/audit/localAuditLogs";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 interface AuthContextType {
@@ -16,6 +18,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function toSafeUser(found: User): User {
+  return {
+    id: found.id,
+    nombre: found.nombre,
+    email: found.email,
+    rol: found.rol,
+    avatar: found.avatar,
+    createdAt: found.createdAt,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,14 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured) {
         const fresh = await (await import("@/lib/db")).db.usuarios.getById(user.id);
         if (fresh) {
-          const safeUser: User = {
-            id: fresh.id,
-            nombre: fresh.nombre,
-            email: fresh.email,
-            rol: fresh.rol,
-            avatar: fresh.avatar,
-            createdAt: fresh.createdAt,
-          };
+          const safeUser = toSafeUser(fresh);
           setUser(safeUser);
           localStorage.setItem("medimaint_user", JSON.stringify(safeUser));
         }
@@ -45,33 +51,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    // Try session token first
-    const session = db.usuarios.verifySession();
-    if (session && session.userId) {
-      const usuarios = db.usuarios.getAll();
-      const found = usuarios.find((u) => u.id === session.userId);
-      if (found) {
-        const safeUser: User = {
-          id: found.id,
-          nombre: found.nombre,
-          email: found.email,
-          rol: found.rol,
-          avatar: found.avatar,
-          createdAt: found.createdAt,
-        };
-        setUser(safeUser);
-        setIsDemoSession(session.isDemo === true);
-        setIsLoading(false);
-        return;
-      }
+    const session = localAuth.verifySession();
+    if (session?.userId) {
+      const found = localAuth.getUserById(session.userId);
+      const safeUser = found ? toSafeUser(found) : userFromSession(session);
+      setUser(safeUser);
+      setIsDemoSession(session.isDemo === true);
+      setIsLoading(false);
+      return;
     }
 
-    // Fallback to stored user in localStorage
     const stored = localStorage.getItem("medimaint_user");
     if (stored) {
       try {
-        const parsed = JSON.parse(stored) as User;
-        setUser(parsed);
+        setUser(JSON.parse(stored) as User);
       } catch {
         localStorage.removeItem("medimaint_user");
       }
@@ -84,14 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isSupabaseConfigured) {
         const found = await (await import("@/lib/db")).db.usuarios.verifyPassword(email, password);
         if (found) {
-          const safeUser: User = {
-            id: found.id,
-            nombre: found.nombre,
-            email: found.email,
-            rol: found.rol,
-            avatar: found.avatar,
-            createdAt: found.createdAt,
-          };
+          const safeUser = toSafeUser(found);
           setUser(safeUser);
           setIsDemoSession(false);
           localStorage.setItem("medimaint_user", JSON.stringify(safeUser));
@@ -100,17 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { ok: false, reason: "Credenciales incorrectas o servicio no disponible" };
       }
 
-      // Use mockDb
-      const result = db.usuarios.verifyPassword(email, password);
+      const result = localAuth.verifyPassword(email, password);
       if (result.user) {
-        const safeUser: User = {
-          id: result.user.id,
-          nombre: result.user.nombre,
-          email: result.user.email,
-          rol: result.user.rol,
-          avatar: result.user.avatar,
-          createdAt: result.user.createdAt,
-        };
+        const safeUser = toSafeUser(result.user);
         setUser(safeUser);
         setIsDemoSession(false);
         localStorage.setItem("medimaint_user", JSON.stringify(safeUser));
@@ -128,14 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginDemo = useCallback(async (): Promise<boolean> => {
     try {
-      const { user: demoUser } = db.usuarios.loginDemo();
-      const safeUser: User = {
-        id: demoUser.id,
-        nombre: demoUser.nombre,
-        email: demoUser.email,
-        rol: demoUser.rol,
+      const { user: demoUser } = localAuth.loginDemo();
+      const safeUser = toSafeUser({
+        ...demoUser,
         createdAt: demoUser.createdAt ?? new Date().toISOString(),
-      };
+      });
       setUser(safeUser);
       setIsDemoSession(true);
       localStorage.setItem("medimaint_user", JSON.stringify(safeUser));
@@ -147,16 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     if (user) {
-      // Log access on logout using mockDb
-      try {
-        const { accessLog } = require("@/lib/mockDb");
-        // Fire-and-forget: we can't import accessLog directly since it's not exported
-      } catch { /* ignore */ }
+      recordAccessLog(user.id, user.email, "logout", "Logout");
     }
     setUser(null);
     setIsDemoSession(false);
     localStorage.removeItem("medimaint_user");
-    localStorage.removeItem("medimaint_session_token");
+    clearSessionToken();
   }, [user]);
 
   const hasRole = useCallback(
