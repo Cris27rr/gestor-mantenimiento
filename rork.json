@@ -1,0 +1,18 @@
+{
+  "$schema": "https://rork.com/schema/rork.json",
+  "apps": [
+    {
+      "name": "MediMaint - Gestión de Mantenimiento de Equipos Médicos",
+      "path": "web",
+      "framework": "web",
+      "settings": {
+        "webSlug": "gestormantenimiento"
+      }
+    },
+    {
+      "name": "Backend",
+      "path": "backend",
+      "framework": "supabase"
+    }
+  ]
+}
